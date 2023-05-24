@@ -30,7 +30,7 @@ class Loader(Dataset):
         self.idx2materialid = {i:o for o,i in self.materialid2idx.items()}
 
         # return the id from the indexed values in the lambda function below
-        self.ratings[rated_material_reference] = data_frame[user_reference].apply(lambda x: self.materialid2idx[x])
+        self.ratings[rated_material_reference] = data_frame[rated_material_reference].apply(lambda x: self.materialid2idx[x])
         self.ratings[user_reference] = data_frame[user_reference].apply(lambda x: self.userid2idx[x])
 
         self.x = self.ratings.drop([rating_reference], axis=1,).values
