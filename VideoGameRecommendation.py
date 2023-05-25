@@ -1,6 +1,7 @@
 # Data Citation
 # Tamber. (2017). Steam Video Games. Retrieved May 22, 2023,.
 
+import numpy
 import pandas
 from torch import save, load
 from torch.utils.data import DataLoader
@@ -10,7 +11,7 @@ from Loader import *
 from sklearn.cluster import KMeans
 
 # This will cause the model to train if true. If training data has been succesfully saved, set to false and it will not train again
-conduct_model_training = True
+conduct_model_training = False
 
 """
 # Drop the irrelevant data, such as purchase type and the extraneous column to clean the dataset
@@ -59,11 +60,13 @@ loss_fn = torch.nn.MSELoss()
 # ADAM optimizer: This is the equation that updates the weights during NN training
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
+train_set = Loader(games_df, 'userID', 'game_name', 'hours_played')
+train_loader = DataLoader(train_set, batch_size, shuffle=True)
+
 
 def train_model():
     # Train data
-    train_set = Loader(games_df, 'userID', 'game_name', 'hours_played')
-    train_loader = DataLoader(train_set, batch_size, shuffle=True)
+
 
     for it in range(num_epochs):
         losses = []
@@ -85,11 +88,11 @@ def train_model():
 if conduct_model_training:
     train_model()
 
-with open('model_state.pt', 'wb') as f:
-    save(model.state_dict(), f)
-
-with open('model_state.pt', 'rb') as f:
-    model.load_state_dict(load(f))
+    with open('model_state.pt', 'wb') as f:
+        save(model.state_dict(), f)
+else:
+    with open('model_state.pt', 'rb') as f:
+        model.load_state_dict(load(f))
 
 # Compare the new weights after training with the old
 print("New Weights:")
@@ -111,3 +114,17 @@ trained_game_embeddings = model.item_factors.weight.data.cpu().numpy()
 # Fit the clusters based on game weights
 kmeans = KMeans(n_init=10, n_clusters=10, random_state=0).fit(trained_game_embeddings)
 
+
+def print_recommendations(cluster_size: int):
+    for cluster in range(cluster_size):
+        print("Cluster = #{}".format(cluster))
+        games = []
+        for gameidx in numpy.where(kmeans.labels_ == cluster)[0]:
+            gameid = train_set.idx2materialid[gameidx]
+            rat_count = games_df.loc[games_df['game_name'] == gameid].count()[0]
+            games.append(gameid + str(rat_count))
+        for game in sorted(games, key=lambda tup: tup[1], reverse=True)[:10]:
+            print("\t", game)
+
+
+print_recommendations(10)
