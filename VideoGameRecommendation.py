@@ -14,21 +14,27 @@ from sklearn.cluster import KMeans
 conduct_model_training = False
 
 """
-# Drop the irrelevant data, such as purchase type and the extraneous column to clean the dataset
-games_df = pandas.read_csv('steam-200k.csv')
-print(games_df.info())
-dropped_purchases_games_df = games_df[games_df.behavior_name != 'purchase']
-print(dropped_purchases_games_df.head())
-dropped_purchases_games_df = dropped_purchases_games_df.drop(['behavior_name', 'number_zero'], axis=1)
-print(dropped_purchases_games_df.head())
-print(dropped_purchases_games_df.info())
-playtime_only_games_csv = dropped_purchases_games_df.to_csv('playtime_only_games.csv', index=False)
+# This code block cleans the dataset by dropping the irrelevant data, such as purchase type and the extraneous column.
+# It then creates a new CSV file with the clean data
+# This block needs only be run once
+
+def clean_dataset():
+    games_df = pandas.read_csv('steam-200k.csv')
+    print(games_df.info())
+    dropped_purchases_games_df = games_df[games_df.behavior_name != 'purchase']
+    print(dropped_purchases_games_df.head())
+    dropped_purchases_games_df = dropped_purchases_games_df.drop(['behavior_name', 'number_zero'], axis=1)
+    print(dropped_purchases_games_df.head())
+    print(dropped_purchases_games_df.info())
+    playtime_only_games_csv = dropped_purchases_games_df.to_csv('playtime_only_games.csv', index=False)
+    
+    
+clean_dataset()
 """
 
 games_df = pandas.read_csv('playtime_only_games.csv')
-print(games_df.head())
+# print(games_df.head())
 
-# game_names = games_df.set_index('game_name').to_dict()
 num_users = len(games_df.userID.unique())
 num_items = len(games_df.game_name.unique())
 print('Number of unique users:', num_users)
@@ -46,10 +52,11 @@ print('Is running on GPU:', cuda)
 
 model = MatrixFactorization(num_users, num_items, num_factors=8)
 
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(name, param.data)
-print('\n')
+# Prints the current wights in the Pytorch Tensor objects
+# for name, param in model.named_parameters():
+#     if param.requires_grad:
+#         print(name, param.data)
+# print('\n')
 
 # gpu enable if you have cuda
 model = model.to("cuda") if cuda else model.to("cpu")
@@ -95,19 +102,19 @@ else:
         model.load_state_dict(load(f))
 
 # Compare the new weights after training with the old
-print("New Weights:")
-c = 0
-uw = 0
-iw = 0
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        print(name, param.data)
-        if c == 0:
-            uw = param.data
-            c += 1
-        else:
-            iw = param.data
-        print('param data:', param.data)
+# print("New Weights:")
+# c = 0
+# uw = 0
+# iw = 0
+# for name, param in model.named_parameters():
+#     if param.requires_grad:
+#         print(name, param.data)
+#         if c == 0:
+#             uw = param.data
+#             c += 1
+#         else:
+#             iw = param.data
+#         print('param data:', param.data)
 
 trained_game_embeddings = model.item_factors.weight.data.cpu().numpy()
 
@@ -127,4 +134,8 @@ def print_recommendations(cluster_size: int):
             print("\t", game)
 
 
+print("\nThe following clusters represent collections of games that users may like.\n"
+      "If a user likes one game in a cluster, they will very likely enjoy other games in that cluster.\n"
+      "Due to using playtime as the primary comparison metric, this program has a tendency to prefer games with "
+      "longer completion times in its output.\n")
 print_recommendations(10)
